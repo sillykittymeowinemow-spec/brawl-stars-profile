@@ -1,0 +1,150 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Brawl Stars Profile</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#101321;color:white;
+ font-family:Arial,sans-serif;padding:20px
+}
+main{max-width:850px;margin:30px auto}
+header{font-size:25px;font-weight:900;color:#ffca35}
+.card{
+ background:#202943;border:1px solid #394766;
+ border-radius:18px;padding:22px;margin-top:18px
+}
+.hero{background:linear-gradient(130deg,#46558e,#242c4a)}
+h1{font-size:35px;margin:12px 0}
+.muted{color:#aab8d9}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
+.stat{background:#202943;padding:20px;border-radius:14px}
+.stat small{color:#aab8d9}
+.stat h2{font-size:27px;margin-bottom:0}
+button{
+ background:#ffca35;border:0;border-radius:9px;
+ padding:13px 20px;font-weight:bold;cursor:pointer
+}
+.item{
+ display:flex;justify-content:space-between;
+ padding:13px;background:#303c5b;
+ border-radius:10px;margin:8px 0
+}
+#status{color:#ffca35;margin-top:15px}
+@media(max-width:500px){h1{font-size:27px}}
+</style>
+</head>
+<body>
+<main>
+<header>⭐ BRAWL STATS</header>
+
+<section class="card hero">
+ <div class="muted">PLAYER PROFILE</div>
+ <h1 id="name">BRAWLER</h1>
+ <p class="muted">PLAYER TAG: #8PLR99U9Y</p>
+ <button onclick="loadProfile()">REFRESH PROFILE</button>
+ <p id="status">Ready to connect...</p>
+</section>
+
+<section class="stats">
+ <div class="stat">
+  <small>🏆 TROPHIES</small>
+  <h2 id="trophies">—</h2>
+ </div>
+ <div class="stat">
+  <small>🥇 HIGHEST TROPHIES</small>
+  <h2 id="highest">—</h2>
+ </div>
+ <div class="stat">
+  <small>⚔️ 3V3 WINS</small>
+  <h2 id="wins">—</h2>
+ </div>
+ <div class="stat">
+  <small>⭐ BRAWLERS</small>
+  <h2 id="count">—</h2>
+ </div>
+</section>
+
+<section class="card">
+ <h2>⭐ BRAWLER COLLECTION</h2>
+ <div id="brawlers" class="muted">Waiting for profile...</div>
+</section>
+
+<section class="card">
+ <h2>⚔️ RECENT BATTLES</h2>
+ <div id="battles" class="muted">Waiting for profile...</div>
+</section>
+
+<footer class="muted" style="text-align:center;padding:25px">
+ Fan-made Brawl Stars tracker
+</footer>
+</main>
+
+<script>
+// Add your Cloudflare Worker URL in the next step.
+const API_URL = "YOUR_WORKER_URL";
+
+async function loadProfile(){
+ const status=document.getElementById("status");
+ status.textContent="Loading profile...";
+
+ try{
+  const response=await fetch(API_URL+"/profile");
+  if(!response.ok)throw Error("Profile unavailable");
+  const p=await response.json();
+
+  document.getElementById("name").textContent=p.name;
+  document.getElementById("trophies").textContent=p.trophies;
+  document.getElementById("highest").textContent=p.highestTrophies;
+  document.getElementById("wins").textContent=p["3vs3Victories"];
+  document.getElementById("count").textContent=p.brawlers.length;
+
+  document.getElementById("brawlers").innerHTML="";
+  p.brawlers.sort((a,b)=>b.trophies-a.trophies)
+   .forEach(b=>{
+    const row=document.createElement("div");
+    row.className="item";
+    const name=document.createElement("span");
+    name.textContent=b.name+" · Power "+b.power;
+    const trophy=document.createElement("b");
+    trophy.textContent="🏆 "+b.trophies;
+    row.append(name,trophy);
+    document.getElementById("brawlers").append(row);
+   });
+
+  status.textContent="✓ Profile loaded!";
+ }catch(e){
+  status.textContent="Waiting for API connection. "+e.message;
+ }
+}
+
+async function loadBattles(){
+ try{
+  const response=await fetch(API_URL+"/battles");
+  if(!response.ok)throw Error();
+  const data=await response.json();
+  const box=document.getElementById("battles");
+  box.innerHTML="";
+  (data.items||[]).slice(0,10).forEach(b=>{
+   const row=document.createElement("div");
+   row.className="item";
+   const mode=document.createElement("span");
+   mode.textContent=b.battle.mode||"Battle";
+   const result=document.createElement("b");
+   result.textContent=b.battle.result||
+    (b.battle.trophyChange!=null?
+     b.battle.trophyChange+" trophies":"Played");
+   row.append(mode,result);
+   box.append(row);
+  });
+ }catch(e){
+  document.getElementById("battles").textContent=
+   "Battle history will appear after connection.";
+ }
+}
+</script>
+</body>
+</html>
